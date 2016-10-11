@@ -24,16 +24,16 @@ namespace main_savitch_14
     {
 	restart( );
 
-//	while (!is_game_over( ))
-//	{
+	while (!is_game_over( ))
+	{
 	    display_status( );
-//	    if (last_mover( ) == COMPUTER)
+	  if (last_mover( ) == COMPUTER)
 		make_human_move( );
-//	    else
-//		make_computer_move( );
-//	}
+	  else
+	  make_computer_move( );
+	}
 	display_status( );
-	return HUMAN;//winning( );
+	return winning();
     }
 
 
@@ -153,14 +153,14 @@ namespace main_savitch_14
 	make_move(best_move);
     }
 
-    void game::make_human_move( )
+    void game::make_human_move( )//////////////////
     {
         string move;
 
 	move = get_user_move( );
 	while (!is_legal(move))
 	{
-	    display_message("Illegal move.\n");
+	    display_message("Illegal move, please try again.\n");
 	    move = get_user_move( );
         }
 	make_move(move);
