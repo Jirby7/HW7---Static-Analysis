@@ -1,91 +1,61 @@
+//Othello implementaion - Jordan Irby
 #include "othello.h"
 
-Othello::Othello()
-{
-	black_c = 0;
-	white_c = 0;
+//Used to reset board at start
+void Othello::restart()
+   {
+      board[3][3].set_white();
+      board[4][4].set_white();
+      board[3][4].set_black();
+      board[4][3].set_black();
+
+      game::restart();
+   }
+
+//Displays the status of the board
+void Othello::display_status()const
+	{
+	  int i = 0;
+      int j = 0;
+      cout << endl << endl;
+      cout << BLUE << "\n  Othello Board \n";
+      cout << "_____________________\n";
+      cout << "  A B C D E F G H \n";
+      for(i = 0; i < 8; ++i)
+      {
+         cout << WHITE << i + 1;
+         for(j = 0; j < 8; ++j)
+         {
+            cout << B_RED << " ";
+            if(board[i][j].is_black() == true)
+            {
+               cout << BLACK << "0";
+            }
+            else if(board[i][j].is_white() == true)
+            {
+               cout << WHITE << "0";
+            }
+            else
+            {
+               cout << " ";
+            }
+         }
+         cout << RESET;
+         cout << endl;
+		}
 }
 
-void Othello::make_move(const std::string& move)
+// Part 3 of project.
+// Computes all possible moves
+void Othello::compute_moves(queue<string>& moves) const
 {
-	if (move != "") {
-    int row, col;
-    convert(row,col,move);
-    if (next_mover() == HUMAN) {
-      board[row][col].set_black();
-      ++black_c;
-    }else {
-      board[row][col].set_white();
-      ++white_c;
+  for (int r = 0; r < 8; ++r) {
+    for (int c = 0; c < 8; ++c) {
+      if (board[r][c].is_empty()) {
+        if (is_it_flanked(r,c)) moves.push(coord_to_string(r,c));
+      }
     }
-    process_flip(row,col);
   }
-  game::make_move(move);
-}
-
-
-void Othello::process_flip(int r, int c)
-{
-  if (is_ee_flanked(r,c)) flip_angle(r,c+1,0);     //E  - 0 degrees
-  if (is_ne_flanked(r,c)) flip_angle(r-1,c+1,45);  //NE - 45 degrees
-  if (is_nn_flanked(r,c)) flip_angle(r-1,c,90);    //N  - 90 degrees
-  if (is_nw_flanked(r,c)) flip_angle(r-1,c-1,135); //NW - 135 degrees
-  if (is_ww_flanked(r,c)) flip_angle(r,c-1,180);   //W  - 180 degrees
-  if (is_sw_flanked(r,c)) flip_angle(r+1,c-1,225); //SW - 225 degrees
-  if (is_ss_flanked(r,c)) flip_angle(r+1,c,270);   //S  - 270 degrees
-  if (is_se_flanked(r,c)) flip_angle(r+1,c+1,315); //SE - 315 degrees
-}
-
-
-void Othello::flip_angle(int r, int c, int angle)
-{
-  int ro, co;
-  if (angle == 0) { ro = 0; co = 1; }
-  else if (angle == 45)  { ro = -1; co = 1; }
-  else if (angle == 90)  { ro = -1; co = 0; }
-  else if (angle == 135) { ro = -1; co = -1; }
-  else if (angle == 180) { ro = 0; co = -1; }
-  else if (angle == 225) { ro = 1; co = -1; }
-  else if (angle == 270) { ro = 1; co = 0; }
-  else if (angle == 315) { ro = 1; co = 1; }
-  if (board[r][c] != board[r+ro][c+co]) {
-    flip_and_update(r,c);
-    return;
-  }else{
-    flip_angle(r+ro,c+co,angle);
-    flip_and_update(r,c);
-  }
-}
-
-
-void Othello::flip_and_update(const int r, const int c)
-{
-  board[r][c].flip();
-  if (board[r][c].is_black()) {
-    ++black_c;
-    --white_c;
-  }else {
-    ++white_c;
-    --black_c;
-  }
-}
-
-void convert(int& r, int& c, string move)
-{
-  char ch;
-  istringstream iss(move);
-  if ((move.substr(0,1)).find_first_of("12345678") == string::npos)
-    iss >> ch >> r;
-  else iss >> r >> ch;
-  r -= 1;
-  if (ch == 'a' || ch == 'A') c = 0;
-  if (ch == 'b' || ch == 'B') c = 1;
-  if (ch == 'c' || ch == 'C') c = 2;
-  if (ch == 'd' || ch == 'D') c = 3;
-  if (ch == 'e' || ch == 'E') c = 4;
-  if (ch == 'f' || ch == 'F') c = 5;
-  if (ch == 'g' || ch == 'G') c = 6;
-  if (ch == 'h' || ch == 'H') c = 7;
 }
 
 string coord_to_string(const int r, const int c)
@@ -109,33 +79,77 @@ string coord_to_string(const int r, const int c)
   return (rv + "h");
 }
 
-
-bool Othello::is_legal(const string& move) const
+// Part 3 of Project
+// Evaluates board position and give a score. (+) is good (-) is bad
+int Othello::evaluate() const
 {
-  if (move == "" && !are_moves_available()) return true;
-  if (move == "q" || move == "Q") exit(99); //quit program
-  // Check if input is valid or not.
-  if (move.size() != 2) return false;
-  string s1, s2;
-  string legal_char = "abcdefghABCDEFGH";
-  string legal_nums = "12345678";
-  s1 = move.substr(0,1);
-  s2 = move.substr(1);
-  if ((s1.find_first_of(legal_char) == string::npos ||
-       s2.find_first_of(legal_nums) == string::npos)&&
-      (s1.find_first_of(legal_nums) == string::npos ||
-       s2.find_first_of(legal_char) == string::npos))
-    return false;
-  // Convert string move to coordinates.
-  int row, col;
-  convert(row,col,move);
-  // Now check that the piece isn't being placed on top of another.
-  if (!board[row][col].is_empty()) return false;
-  // Check if the move would flank the opposite color in any direction.
-  return (is_it_flanked(row,col));
+  int b_value = black;
+  int w_value = white;
+  int corner = 25;
+  int x_sqr = 5;
+  int stable = 10;
+
+  for (int r = 0; r < 8; ++r) {
+    for (int c = 0; c < 8; ++c) {
+      //check if piece is empty
+      if (!board[r][c].is_empty()) {
+
+
+        if (moves_completed() < 20) {
+          if (((r == c) && (r != 3 || r != 4)) ||
+               (r == 1 && c == 6) || (r == 2 && c == 5) ||
+               (r == 5 && c == 2) || (r == 6 && c == 1)) {
+            if (board[r][c].is_black()) b_value += x_sqr;
+            else w_value -= x_sqr;
+          }
+        }
+
+        //check for corners
+        if (((r == 0 || r == 7) && r == c) ||
+             (r == 0 && c == 7) ||
+             (r == 7 && c == 0))  {
+          if (board[r][c].is_black()) b_value += corner;
+          else w_value += corner;
+        }
+
+        //check for piece stability.
+        if (is_it_flanked(r,c)) {
+          if (board[r][c].is_black()) w_value += stable;
+          else b_value -= stable;
+        }
+
+      }
+    }
+  }
+  return (w_value - b_value);
+}
+
+//Part 3 of project.
+//returns a copy of game
+game* Othello::clone() const
+{
+  return new Othello(*this);
+}
+
+//Returns true if piece flanks a color in any directions else returns false
+bool Othello::is_it_flanked(int r, int c)const
+{
+  if (is_e_flanked(r,c)) return true;
+  if (is_ne_flanked(r,c)) return true;
+  if (is_n_flanked(r,c)) return true;
+  if (is_nw_flanked(r,c)) return true;
+  if (is_w_flanked(r,c)) return true;
+  if (is_sw_flanked(r,c)) return true;
+  if (is_s_flanked(r,c)) return true;
+  if (is_se_flanked(r,c)) return true;
+
+  else
+  return false;
 }
 
 
+// Goes through every spot on the board and looks for empty ones.
+// Checks if moving to that spot is a legal move
 bool Othello::are_moves_available() const
 {
   for (int i = 0; i < 2; ++i) {
@@ -148,25 +162,140 @@ bool Othello::are_moves_available() const
   return false;
 }
 
-
-bool Othello::is_it_flanked(int r, int c) const
+//Converts string to ints
+void convert_string(int& r, int& c, string move)
 {
-  if (is_ee_flanked(r,c)) return true;
-  if (is_ne_flanked(r,c)) return true;
-  if (is_nn_flanked(r,c)) return true;
-  if (is_nw_flanked(r,c)) return true;
-  if (is_ww_flanked(r,c)) return true;
-  if (is_sw_flanked(r,c)) return true;
-  if (is_ss_flanked(r,c)) return true;
-  if (is_se_flanked(r,c)) return true;
-  return false;
+  char ch;
+  istringstream buffer(move);
+  if ((move.substr(0,1)).find_first_of("12345678") == string::npos)
+    buffer >> ch >> r;
+  else buffer >> r >> ch;
+  r = r - 1;
+  if (ch == 'a' || ch == 'A') c = 0;
+  if (ch == 'b' || ch == 'B') c = 1;
+  if (ch == 'c' || ch == 'C') c = 2;
+  if (ch == 'd' || ch == 'D') c = 3;
+  if (ch == 'e' || ch == 'E') c = 4;
+  if (ch == 'f' || ch == 'F') c = 5;
+  if (ch == 'g' || ch == 'G') c = 6;
+  if (ch == 'h' || ch == 'H') c = 7;
 }
 
+//Check if move made was legal
+bool Othello::is_legal(const string& move)const
+{
+  // Check if input is valid or not.
+  if (move.size() != 2) return false;
+  string s1, s2;
 
-bool Othello::is_nn_flanked(int r, int c) const
+  string legal_char = "abcdefghABCDEFGH"; //all legal input for columns
+  string legal_nums = "12345678"; //all legal input for rows
+  s1 = move.substr(0,1);
+  s2 = move.substr(1);
+
+  if ((s1.find_first_of(legal_char) == string::npos ||
+       s2.find_first_of(legal_nums) == string::npos)&&
+      (s1.find_first_of(legal_nums) == string::npos ||
+       s2.find_first_of(legal_char) == string::npos))
+    return false;
+  //cnvert string move to coordinates.
+  int row, col;
+  convert_string(row,col,move);
+  //check that the piece is placed in empty spot
+  if (!board[row][col].is_empty()) return false;
+  //check if the move would flank opposite color
+  return (is_it_flanked(row,col));
+}
+
+//Checks directions to see which pices can be flipped
+void Othello::process_flip(int r, int c)
+{
+  if (is_e_flanked(r,c)) flip_angle(r,c+1,1);     //E = 1
+  if (is_ne_flanked(r,c)) flip_angle(r-1,c+1,2);  //NE = 2
+  if (is_n_flanked(r,c)) flip_angle(r-1,c,3);    //N = 3
+  if (is_nw_flanked(r,c)) flip_angle(r-1,c-1,4); //NW = 4
+  if (is_w_flanked(r,c)) flip_angle(r,c-1,5);   //W = 5
+  if (is_sw_flanked(r,c)) flip_angle(r+1,c-1,6); //SW = 6
+  if (is_s_flanked(r,c)) flip_angle(r+1,c,7);   //S = 7
+  if (is_se_flanked(r,c)) flip_angle(r+1,c+1,8); //SE = 8
+}
+
+//Places piece on coordinates
+void Othello::make_move(const std::string& move)
+{
+    if (move != "") {
+    int row, col;
+    convert_string(row,col,move);
+    if (next_mover() == HUMAN) {
+      board[row][col].set_black();
+      ++black;
+    }else {
+      board[row][col].set_white();
+      ++white;
+    }
+    process_flip(row,col);
+  }
+    game::make_move(move);
+   }
+
+//Handles pieces that need flipped
+void Othello::flip_angle(int r, int c, int angle)
+{
+  int ro, co;
+  if (angle == 0) { ro = 0; co = 1; }
+  else if (angle == 1)  { ro = -1; co = 1; }
+  else if (angle == 2)  { ro = -1; co = 0; }
+  else if (angle == 3) { ro = -1; co = -1; }
+  else if (angle == 4) { ro = 0; co = -1; }
+  else if (angle == 5) { ro = 1; co = -1; }
+  else if (angle == 6) { ro = 1; co = 0; }
+  else if (angle == 7) { ro = 1; co = 1; }
+  {
+    update_flip(r,c);
+    return;
+    flip_angle(r+ro,c+co,angle);
+    update_flip(r,c);
+  }
+}
+
+//Flips all pieces sent
+void Othello::update_flip(const int r, const int c)
+{
+  board[r][c].flip();
+  if (board[r][c].is_black()) {
+    ++black;
+    --white;
+  }else {
+    ++white;
+    --black;
+}
+}
+
+//Gets the users input
+string Othello::get_user_move()const
+{
+    if(next_mover() == game::HUMAN){
+    string answer;
+    display_message("\nPlayer One Move, please: \n");
+    getline(cin, answer);
+    return answer;
+  	}
+
+  	if(next_mover() == game::COMPUTER){
+  	string answer;
+	display_message("\nPlayer Two Move, please: \n");
+    getline(cin, answer);
+    return answer;
+	}
+}
+
+//Checks if North Direction would flank any pieces
+bool Othello::is_n_flanked(int r, int c) const
 {
   if (r == 0) return false;
+
   if (board[r-1][c].is_empty()) return false;
+
   int ro = 2;
   if (next_mover() == HUMAN) {
     if (board[r-1][c].is_black()) return false;
@@ -184,11 +313,13 @@ bool Othello::is_nn_flanked(int r, int c) const
   return false;
 }
 
-
+//Checks if North-East Direction would flank any pieces
 bool Othello::is_ne_flanked(int r, int c) const
 {
   if (r == 0 || c == 7) return false;
+
   if (board[r-1][c+1].is_empty()) return false;
+
   int ro = 2, co = 2;
   if (next_mover() == HUMAN) {
     if (board[r-1][c+1].is_black()) return false;
@@ -206,11 +337,13 @@ bool Othello::is_ne_flanked(int r, int c) const
   return false;
 }
 
-
-bool Othello::is_ee_flanked(int r, int c) const
+//Checks if East Direction would flank any pieces
+bool Othello::is_e_flanked(int r, int c) const
 {
   if (c == 7) return false;
+
   if (board[r][c+1].is_empty()) return false;
+
   int co = 2;
   if (next_mover() == HUMAN) {
     if (board[r][c+1].is_black()) return false;
@@ -228,11 +361,13 @@ bool Othello::is_ee_flanked(int r, int c) const
   return false;
 }
 
-
+//Checks if South-East Direction would flank any pieces
 bool Othello::is_se_flanked(int r, int c) const
 {
   if (r == 7 || c == 7) return false;
+
   if (board[r+1][c+1].is_empty()) return false;
+
   int ro = 2, co = 2;
   if (next_mover() == HUMAN) {
     if (board[r+1][c+1].is_black()) return false;
@@ -250,11 +385,13 @@ bool Othello::is_se_flanked(int r, int c) const
   return false;
 }
 
-
-bool Othello::is_ss_flanked(int r, int c) const
+//Checks if South Direction would flank any pieces
+bool Othello::is_s_flanked(int r, int c) const
 {
   if (r == 7) return false;
+
   if (board[r+1][c].is_empty()) return false;
+
   int ro = 2;
   if (next_mover() == HUMAN) {
     if (board[r+1][c].is_black()) return false;
@@ -272,11 +409,13 @@ bool Othello::is_ss_flanked(int r, int c) const
   return false;
 }
 
-
+//Checks if South-West Direction would flank any pieces
 bool Othello::is_sw_flanked(int r, int c) const
 {
   if (r == 7 || c == 0) return false;
+
   if (board[r+1][c-1].is_empty()) return false;
+
   int ro = 2, co = 2;
   if (next_mover() == HUMAN) {
     if (board[r+1][c-1].is_black()) return false;
@@ -294,11 +433,13 @@ bool Othello::is_sw_flanked(int r, int c) const
   return false;
 }
 
-
-bool Othello::is_ww_flanked(int r, int c) const
+///Checks if West Direction would flank any pieces
+bool Othello::is_w_flanked(int r, int c) const
 {
   if (c == 0) return false;
+
   if (board[r][c-1].is_empty()) return false;
+
   int co = 2;
   if (next_mover() == HUMAN) {
     if (board[r][c-1].is_black()) return false;
@@ -316,11 +457,13 @@ bool Othello::is_ww_flanked(int r, int c) const
   return false;
 }
 
-
+//Checks if North-West Direction would flank any pieces
 bool Othello::is_nw_flanked(int r, int c) const
 {
   if (r == 0 || c == 0) return false;
+
   if (board[r-1][c-1].is_empty()) return false;
+
   int ro = 2, co = 2;
   if (next_mover() == HUMAN) {
     if (board[r-1][c-1].is_black()) return false;
@@ -336,4 +479,29 @@ bool Othello::is_nw_flanked(int r, int c) const
     }
   }
   return false;
-} 
+}
+
+//Calculates which player is currently winning
+bool Othello::winning()
+   {
+      int row, column;
+
+      int whcnt, blcnt = 0;
+
+      for(row = 0; row < 8; ++row)
+      {
+         for(column = 0; column < 8; ++ column)
+         {
+            if(board[row][column].is_white())
+            {whcnt++;}
+            if(board[row][column].is_black())
+            {blcnt++;}
+         }
+      }
+      if(whcnt < blcnt)
+      {return game::COMPUTER;}
+      if(whcnt > blcnt)
+      {return game::HUMAN;}
+      if(whcnt = blcnt)
+      {return game::NEUTRAL;}
+   }

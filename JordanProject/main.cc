@@ -1,3 +1,6 @@
+//Jordan Irby
+//Main file for Othello game project - AI Portion
+
 #include <queue>
 #include <iostream>
 #include <string>
@@ -7,28 +10,16 @@
 #include "colors.h"
 
 using namespace std;
-using namespace main_savitch_14;
+
+void play();
 
 int main()
 {
-	int j = 0;
-	string move;
-	Othello o;
+  Othello o;
 
-	o.restart();
-	o.display_status();
-
-	move = o.get_user_move();
-	if (o.is_legal(move))
-	{
-		o.make_move(move);
-		o.display_status();
-		j++;
-	}
-	else
-	cout << "Cannot make move, try again.";
-
-
-
-
+ game::who winner;
+  if (winner == 0) cout << "You win!";
+  if (winner == 2) cout << "You lose!";
+  cout << endl << RESET;
+  o.play();
 }
